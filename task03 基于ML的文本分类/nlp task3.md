@@ -14,7 +14,7 @@
 
 sklearn库中`CountVectorizer`可便捷实现词袋
 
-***图片1***
+<img src="https://github.com/starlee1996/nlpCompetition/blob/master/task03%20%E5%9F%BA%E4%BA%8EML%E7%9A%84%E6%96%87%E6%9C%AC%E5%88%86%E7%B1%BB/pictures/1.png?raw=true" style="zoom:80%;" />
 
 ### 1.3 N-gram
 
