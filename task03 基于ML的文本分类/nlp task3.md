@@ -70,19 +70,53 @@ clf.fit(train_test[:10000], train_df['label'].values[:10000])
 
 val_pred = clf.predict(train_test[10000:])
 print(f1_score(train_df['label'].values[10000:], val_pred, average='macro'))
-# 0.87
+# 0.8768
 ```
 
 ## 作业
 
 1.尝试改变TF-IDF参数，并验证精度
 
+尝试改变了TF-IDF中`ngram_range`的取值，将其增大至`(4, 5)`
 
+```python
+tfidf = TfidfVectorizer(ngram_range=(4,5), max_features=3000)
+train_test = tfidf.fit_transform(train_df['text'])
 
+clf = RidgeClassifier()
+clf.fit(train_test[:10000], train_df['label'].values[:10000])
 
+val_pred = clf.predict(train_test[10000:])
+print(f1_score(train_df['label'].values[10000:], val_pred, average='macro'))
+# 0.6312
+```
 
-
-
-
+可见，单纯的增大N-gram，结合更多的相邻词语并不是一个很好的方法，f1 score明显降低了
 
 2.尝试使用其他机器学习模型，完成训练和验证
+
+尝试SVM和Random Forest
+
+```python
+from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
+
+tfidf = TfidfVectorizer(ngram_range=(1,3), max_features=3000)
+train_test = tfidf.fit_transform(train_df['text'])
+
+clf = svm.SVC()
+clf.fit(train_test[:10000], train_df['label'].values[:10000])
+
+val_pred = clf.predict(train_test[10000:])
+print(f1_score(train_df['label'].values[10000:], val_pred, average='macro'))
+# 0.8723
+
+clf = RandomForestClassifier()
+clf.fit(train_test[:10000], train_df['label'].values[:10000])
+
+val_pred = clf.predict(train_test[10000:])
+print(f1_score(train_df['label'].values[10000:], val_pred, average='macro'))
+# 0.7764
+```
+
+可见SVM和Ridge Classifier的表现较好，进一步可以在深度学习中提高精度。
