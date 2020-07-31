@@ -1,81 +1,47 @@
-# Task 4 基于深度学习的文本分类
+# Task 5 Word2Vec
 
 2群-181-datago-StarLEE
 
-## 1. 原文本表示方法的缺陷
+## 1. Word2Vec简介
 
-对于One-hot，Bag of Words，N-gram以及TF-IDF这类文本表示方法，转换得到的文本向量维度很高，需要大量的训练时间，且未考虑单词间联系，只是进行了单纯 的统计。
+Word2Vec模型基本思想是对出现在上下文环境里的词进行预测。对于每条输入文本，选取一个上下文窗口和一个中心词，并基于中心词去预测窗口里其他词出现的概率。Word2Vec模型可以方便地从新增语料中学习到新增词的向量表达，是一种高效的在线学习算法。
 
-深度学习可以将文本映射到一个低维空间，例如：FastText，WordsVec和Bert
+Word2Vec分为两个部分：建立模型与通过模型获取嵌入词向量。Word2Vec与auto encoder的思想很相似，先基于训练数据构建一个神经网络，当这个模型训练好以后，并不用训练好的模型处理新任务，而是获取该模型训练所得的参数，例如隐层的权重矩阵。这些权重在Word2Vec中实际上就是试图去学习的“word vectors”。
 
-## 2. FastText
+## 2. skip-grams
 
-FastText借助深度学习，通过Embedding层将单词映射到稠密空间，然后把单词在Embedding空间中进行平均，进而完成分类。FastText为一个三层的NN。
+skip-grams为输入一个词，借助NN输出上下文内容
 
-借助keras可以实现FastText：
++ input word：输入的中心词
++ skip_window：中心词左右选取词（窗口）容量
++ num_skips：窗口中选取不同词作为output的数量
 
-```python
-from __future__ import unicode_literals
+### 2.1 skip-grams训练
 
-from keras.models import Sequential
-from keras.layers import Embedding
-from keras.layers import GlobalAveragePooling1D
-from keras.layers import Dense
+Word2Vec是一个规模庞大的NN，为了降低计算量，有以下解决办法：
 
-VOCAB_SIZE = 2000
-EMBEDDING_DIM = 100
-MAX_WORDS = 500
-CLASS_NUM = 5
+1.常见单词组合视为一个单词
 
-def build_fastText():
-	moedl = Sequential()
-	model.add(Embedding(VOCAB_SIZE, EMBEDDING_DIM, input_length = MAX_WORDS))
-	model.add(GLOBALAVERAGEPOOLING1D())
-	model.add(Dense(CLASS_NUM, activation = 'softmax'))
-	model.compile(loss='categorical_crossentropy', optimizer = 'SGD', metrics = ['accuracy'])
-	return model
+2.对高频单词进行抽样以减少训练样本个数：
 
-if __name__ == '__main__':
-	model = build_fastText()
-	print(model.summary())
-```
+高频单词存在问题：
 
-FastText相较于TF-IDF，具有以下优点：
++ 得到关于高频单词的成对训练样本时，该类样本基本不会提供其中低频单词的语义信息
++ 高频单词会产生大量包含它的样本，而样本数量远远超过学习高频单词词向量所需的样本数
 
-+ FastText的单词的Embedding叠加获得文档向量，将相似的句子分为一类
-+ FastText学习到的Embedding空间维度较低，训练时间更短
+通过抽样来解决：原始文本中的每个词都有一定概率从文本中删去，这个概率与词频有关：
 
-## 3. 基于FastText的文本分类
+![](https://camo.githubusercontent.com/eefc50490ed095d0f01b6e94f723c3365ce3f00b/68747470733a2f2f696d672d626c6f672e6373646e696d672e636e2f32303230303731343230353435363839382e706e67)
 
-### 3.1 分类模型
+3.对优化目标采用“negative sampling”方法，使得每个训练样本只会更新一小部分的模型权重，以降低计算量
 
-```python
-import pandas as pd
-from sklearn.metrics import f1_score
 
-# 转换为FastText需要的格式
-train_df = pd.read_csv('../input/train_set.csv', sep='\t', nrows=15000)
-train_df['label_ft'] = '__label__' + train_df['label'].astype(str)
-train_df[['text','label_ft']].iloc[:-5000].to_csv('train.csv', index=None, header=None, sep='\t')
 
-import fasttext
-model = fasttext.train_supervised('train.csv', lr=1.0, wordNgrams=2, 
-                                  verbose=2, minCount=1, epoch=25, loss="hs")
 
-val_pred = [model.predict(x)[0][0].split('__')[-1] for x in train_df.iloc[-5000:]['text']]
-print(f1_score(train_df['label'].values[-5000:].astype(str), val_pred, average='macro'))
-```
 
-### 3.2 验证集调参
 
-使用10-fold cross-validation，基于验证集的结果调整超参数以优化模型
 
-```python
-label2id = {}
-for i in range(total):
-    label = str(all_labels[i])
-    if label not in label2id:
-        label2id[label] = [i]
-    else:
-        label2id[label].append(i)
-```
+## 3. Hierarchical Softmax
+
+### 3.1 霍夫曼树
+
